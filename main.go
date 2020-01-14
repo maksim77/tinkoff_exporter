@@ -12,11 +12,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-var (
-	totalAmount = prometheus.NewDesc("total", "Total amount", nil, nil)
-	stockPrice  = prometheus.NewDesc("stock", "Stock price", []string{"type", "ticker", "currency", "in_portfolio"}, nil)
-)
-
 func init() {
 	viper.SetDefault("endpoint", "/metrics")
 	viper.SetDefault("port", 8000)

@@ -9,11 +9,28 @@ import (
 	"github.com/spf13/viper"
 )
 
+var (
+	totalAmountDesc        = prometheus.NewDesc("total", "Total amount", nil, nil)
+	stockPriceDesc         = prometheus.NewDesc("stock", "Stock price", []string{"type", "ticker", "currency", "in_portfolio"}, nil)
+	stockCountDesc         = prometheus.NewDesc("stock_count", "Stock count", []string{"type", "ticker"}, nil)
+	stockExpectedYieldDesc = prometheus.NewDesc("stock_expected_yield", "Stock expected yield", []string{"type", "ticker", "currency"}, nil)
+	currencyDesc           = prometheus.NewDesc("currency", "Currency", []string{"currency"}, nil)
+	currencyBlockedDesc    = prometheus.NewDesc("currency_blocked", "Blocked currency", []string{"currency"}, nil)
+	totalPayInDesc         = prometheus.NewDesc("total_payin", "Total PayIn", nil, nil)
+	totalPayOutDesc        = prometheus.NewDesc("total_payout", "Total PayOut", nil, nil)
+)
+
 type TinkoffCollector struct{}
 
 func (c TinkoffCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- totalAmount
-	ch <- stockPrice
+	ch <- totalAmountDesc
+	ch <- stockPriceDesc
+	ch <- stockCountDesc
+	ch <- stockExpectedYieldDesc
+	ch <- currencyDesc
+	ch <- currencyBlockedDesc
+	ch <- totalPayInDesc
+	ch <- totalPayOutDesc
 }
 
 func (c TinkoffCollector) Collect(ch chan<- prometheus.Metric) {
@@ -33,7 +50,7 @@ func (c TinkoffCollector) Collect(ch chan<- prometheus.Metric) {
 		log.Printf("Get total error: %s", err)
 		return
 	}
-	ch <- prometheus.MustNewConstMetric(totalAmount, prometheus.GaugeValue, total)
+	ch <- prometheus.MustNewConstMetric(totalAmountDesc, prometheus.GaugeValue, total)
 
 	for _, p := range portfolio.Positions {
 		wg.Add(1)
@@ -49,15 +66,15 @@ func (c TinkoffCollector) Collect(ch chan<- prometheus.Metric) {
 			default:
 				value = lastPrice
 			}
-			ch <- prometheus.MustNewConstMetric(stockPrice,
+			ch <- prometheus.MustNewConstMetric(stockPriceDesc,
 				prometheus.GaugeValue,
 				value,
 				string(p.InstrumentType), p.Ticker, string(p.ExpectedYield.Currency), "1")
-			ch <- prometheus.MustNewConstMetric(prometheus.NewDesc("stock_count", "Stock count", []string{"type", "ticker"}, nil),
+			ch <- prometheus.MustNewConstMetric(stockCountDesc,
 				prometheus.GaugeValue,
 				p.Balance,
 				string(p.InstrumentType), p.Ticker)
-			ch <- prometheus.MustNewConstMetric(prometheus.NewDesc("stock_expected_yield", "Stock expected yield", []string{"type", "ticker", "currency"}, nil),
+			ch <- prometheus.MustNewConstMetric(stockExpectedYieldDesc,
 				prometheus.GaugeValue,
 				p.ExpectedYield.Value,
 				string(p.InstrumentType), p.Ticker, string(p.ExpectedYield.Currency)) //TODO Обработать разные валюты
@@ -69,16 +86,16 @@ func (c TinkoffCollector) Collect(ch chan<- prometheus.Metric) {
 	for _, c := range portfolio.Currencies {
 		wg.Add(1)
 		go func(c sdk.CurrencyBalance, ch chan<- prometheus.Metric) {
-			ch <- prometheus.MustNewConstMetric(prometheus.NewDesc("currency", "Currency", []string{"currency"}, nil),
+			ch <- prometheus.MustNewConstMetric(currencyDesc,
 				prometheus.GaugeValue, c.Balance, string(c.Currency))
-			ch <- prometheus.MustNewConstMetric(prometheus.NewDesc("currency_blocker", "Blocked currency", []string{"currency"}, nil),
+			ch <- prometheus.MustNewConstMetric(currencyBlockedDesc,
 				prometheus.GaugeValue, c.Blocked, string(c.Currency))
 			wg.Done()
 		}(c, ch)
 	}
 	wg.Wait()
-	ch <- prometheus.MustNewConstMetric(prometheus.NewDesc("total_payin", "Total PayIn", nil, nil), prometheus.GaugeValue, getPayIn(getHistory()))
-	ch <- prometheus.MustNewConstMetric(prometheus.NewDesc("total_payout", "Total PayOut", nil, nil), prometheus.GaugeValue, getPayOut(getHistory()))
+	ch <- prometheus.MustNewConstMetric(totalPayInDesc, prometheus.GaugeValue, getPayIn(getHistory()))
+	ch <- prometheus.MustNewConstMetric(totalPayOutDesc, prometheus.GaugeValue, getPayOut(getHistory()))
 
 	tickers := viper.GetStringSlice("tickers")
 	for _, t := range tickers {
@@ -89,7 +106,7 @@ func (c TinkoffCollector) Collect(ch chan<- prometheus.Metric) {
 			if err != nil {
 				return
 			}
-			ch <- prometheus.MustNewConstMetric(stockPrice, prometheus.GaugeValue, price, "Stock", t, string(f.Currency), "0")
+			ch <- prometheus.MustNewConstMetric(stockPriceDesc, prometheus.GaugeValue, price, "Stock", t, string(f.Currency), "0")
 			wg.Done()
 		}(t, ch)
 	}
