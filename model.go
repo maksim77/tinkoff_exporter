@@ -101,7 +101,10 @@ func (c TinkoffCollector) Collect(ch chan<- prometheus.Metric) {
 	for _, t := range tickers {
 		wg.Add(1)
 		go func(t string, ch chan<- prometheus.Metric) {
-			f := getFigi(t)
+			f, err := getFigi(t)
+			if err != nil {
+				return
+			}
 			price, err := getLastPrice(f.FIGI)
 			if err != nil {
 				return

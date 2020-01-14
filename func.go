@@ -135,7 +135,7 @@ func getPayOut(ops []sdk.Operation) float64 {
 	return total
 }
 
-func getFigi(ticker string) sdk.Instrument {
+func getFigi(ticker string) (sdk.Instrument, error) {
 	client := sdk.NewRestClient(viper.GetString("token"))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -143,10 +143,12 @@ func getFigi(ticker string) sdk.Instrument {
 
 	instruments, err := client.SearchInstrumentByTicker(ctx, ticker)
 	if err != nil {
-		log.Fatalf("Unable to get figi by ticker: %s", err)
+		log.Printf("Unable to get figi by ticker: %s\n", err)
+		return sdk.Instrument{}, err
 	}
 	if len(instruments) != 1 {
-		log.Fatalf("Multiple instriments return by one ticker: %v", instruments)
+		log.Printf("Multiple instriments return by one ticker: %v\n", instruments)
+		return sdk.Instrument{}, err
 	}
-	return instruments[0]
+	return instruments[0], nil
 }
