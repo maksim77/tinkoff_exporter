@@ -134,7 +134,7 @@ func getHistory() []sdk.Operation {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	operations, err := client.Operations(ctx, time.Date(2019, time.October, 1, 0, 0, 0, 0, time.UTC), time.Now(), "")
+	operations, err := client.Operations(ctx, time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC), time.Now(), "")
 	if err != nil {
 		log.Fatal(err)
 	}
