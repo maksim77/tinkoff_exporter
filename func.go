@@ -64,7 +64,7 @@ func getTotalCurrencies(currencies []sdk.CurrencyBalance) (totalCurrencies float
 	for _, c := range currencies {
 		switch c.Currency {
 		case "RUB":
-			totalCurrencies = totalCurrencies + c.Balance
+			totalCurrencies += c.Balance
 		case "USD":
 			lastPrice, err1 := getLastPrice(сurrs["usd"])
 
@@ -74,7 +74,7 @@ func getTotalCurrencies(currencies []sdk.CurrencyBalance) (totalCurrencies float
 				return 0, err1
 			}
 
-			totalCurrencies = totalCurrencies + (c.Balance * lastPrice)
+			totalCurrencies += c.Balance * lastPrice
 		case "EUR":
 			lastPrice, err1 := getLastPrice(сurrs["usd"])
 
@@ -83,7 +83,7 @@ func getTotalCurrencies(currencies []sdk.CurrencyBalance) (totalCurrencies float
 				return 0, err1
 			}
 
-			totalCurrencies = totalCurrencies + (c.Balance * lastPrice)
+			totalCurrencies += c.Balance * lastPrice
 		}
 	}
 
@@ -134,8 +134,7 @@ func getPayIn(ops []sdk.Operation) float64 {
 	var total float64
 
 	for _, o := range ops {
-		switch o.OperationType {
-		case "PayIn":
+		if o.OperationType == "PaiIn" {
 			total += o.Payment
 		}
 	}
@@ -147,8 +146,7 @@ func getPayOut(ops []sdk.Operation) float64 {
 	var total float64
 
 	for _, o := range ops {
-		switch o.OperationType {
-		case "PayOut":
+		if o.OperationType == "PayOut" {
 			total -= o.Payment
 		}
 	}
