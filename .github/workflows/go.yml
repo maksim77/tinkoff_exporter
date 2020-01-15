@@ -29,7 +29,9 @@ jobs:
         run: /home/runner/go/bin/golangci-lint run
 
       - name: Lint with Actions
-        uses: Mushus/golangci-linter@v1.1.1
+        uses: actions-contrib/golangci-lint@master
+        with:
+          args: run
 
       - name: Build
         run: go build -v .
