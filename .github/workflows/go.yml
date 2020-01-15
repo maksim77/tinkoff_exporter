@@ -22,10 +22,8 @@ jobs:
               dep ensure
           fi
 
-      - name: GolangCI-Lint Action
-        uses: actions-contrib/golangci-lint@v0.1.0
-        with:
-          args: run
+      - name: GolangCI
+        uses: Mushus/golangci-linter@v1
 
       - name: Build
         run: go build -v .
