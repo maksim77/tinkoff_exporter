@@ -24,6 +24,7 @@ func main() {
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			log.Println("Please write config file")
+
 			err = viper.SafeWriteConfigAs("config.yaml")
 			if err != nil {
 				log.Fatalf("Error write config sample: %s", err)
