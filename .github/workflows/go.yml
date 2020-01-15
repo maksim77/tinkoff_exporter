@@ -23,7 +23,7 @@ jobs:
           fi
 
       - name: GolangCI
-        uses: Mushus/golangci-linter@v1
+        uses: Mushus/golangci-linter@v1.1.1
 
       - name: Build
         run: go build -v .
