@@ -9,28 +9,39 @@ import (
 	"github.com/spf13/viper"
 )
 
-var (
-	totalAmountDesc        = prometheus.NewDesc("total", "Total amount", nil, nil)
-	stockPriceDesc         = prometheus.NewDesc("stock", "Stock price", []string{"type", "ticker", "currency", "in_portfolio"}, nil)
-	stockCountDesc         = prometheus.NewDesc("stock_count", "Stock count", []string{"type", "ticker"}, nil)
-	stockExpectedYieldDesc = prometheus.NewDesc("stock_expected_yield", "Stock expected yield", []string{"type", "ticker", "currency"}, nil)
-	currencyDesc           = prometheus.NewDesc("currency", "Currency", []string{"currency"}, nil)
-	currencyBlockedDesc    = prometheus.NewDesc("currency_blocked", "Blocked currency", []string{"currency"}, nil)
-	totalPayInDesc         = prometheus.NewDesc("total_payin", "Total PayIn", nil, nil)
-	totalPayOutDesc        = prometheus.NewDesc("total_payout", "Total PayOut", nil, nil)
-)
+type TinkoffCollector struct {
+	totalAmountDesc        *prometheus.Desc
+	stockPriceDesc         *prometheus.Desc
+	stockCountDesc         *prometheus.Desc
+	stockExpectedYieldDesc *prometheus.Desc
+	currencyDesc           *prometheus.Desc
+	currencyBlockedDesc    *prometheus.Desc
+	totalPayInDesc         *prometheus.Desc
+	totalPayOutDesc        *prometheus.Desc
+}
 
-type TinkoffCollector struct{}
+func newTinkoffCollector() *TinkoffCollector {
+	return &TinkoffCollector{
+		totalAmountDesc:        prometheus.NewDesc("total", "Total amount", nil, nil),
+		stockPriceDesc:         prometheus.NewDesc("stock", "Stock price", []string{"type", "ticker", "currency", "in_portfolio"}, nil),
+		stockCountDesc:         prometheus.NewDesc("stock_count", "Stock count", []string{"type", "ticker"}, nil),
+		stockExpectedYieldDesc: prometheus.NewDesc("stock_expected_yield", "Stock expected yield", []string{"type", "ticker", "currency"}, nil),
+		currencyDesc:           prometheus.NewDesc("currency", "Currency", []string{"currency"}, nil),
+		currencyBlockedDesc:    prometheus.NewDesc("currency_blocked", "Blocked currency", []string{"currency"}, nil),
+		totalPayInDesc:         prometheus.NewDesc("total_payin", "Total PayIn", nil, nil),
+		totalPayOutDesc:        prometheus.NewDesc("total_payout", "Total PayOut", nil, nil),
+	}
+}
 
 func (c TinkoffCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- totalAmountDesc
-	ch <- stockPriceDesc
-	ch <- stockCountDesc
-	ch <- stockExpectedYieldDesc
-	ch <- currencyDesc
-	ch <- currencyBlockedDesc
-	ch <- totalPayInDesc
-	ch <- totalPayOutDesc
+	ch <- c.totalAmountDesc
+	ch <- c.stockPriceDesc
+	ch <- c.stockCountDesc
+	ch <- c.stockExpectedYieldDesc
+	ch <- c.currencyDesc
+	ch <- c.currencyBlockedDesc
+	ch <- c.totalPayInDesc
+	ch <- c.totalPayOutDesc
 }
 
 func (c TinkoffCollector) Collect(ch chan<- prometheus.Metric) {
@@ -54,7 +65,7 @@ func (c TinkoffCollector) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 
-	ch <- prometheus.MustNewConstMetric(totalAmountDesc, prometheus.GaugeValue, total)
+	ch <- prometheus.MustNewConstMetric(c.totalAmountDesc, prometheus.GaugeValue, total)
 
 	for _, p := range portfolio.Positions {
 		wg.Add(1)
@@ -74,15 +85,15 @@ func (c TinkoffCollector) Collect(ch chan<- prometheus.Metric) {
 				value = lastPrice
 			}
 
-			ch <- prometheus.MustNewConstMetric(stockPriceDesc,
+			ch <- prometheus.MustNewConstMetric(c.stockPriceDesc,
 				prometheus.GaugeValue,
 				value,
 				string(p.InstrumentType), p.Ticker, string(p.ExpectedYield.Currency), "1")
-			ch <- prometheus.MustNewConstMetric(stockCountDesc,
+			ch <- prometheus.MustNewConstMetric(c.stockCountDesc,
 				prometheus.GaugeValue,
 				p.Balance,
 				string(p.InstrumentType), p.Ticker)
-			ch <- prometheus.MustNewConstMetric(stockExpectedYieldDesc,
+			ch <- prometheus.MustNewConstMetric(c.stockExpectedYieldDesc,
 				prometheus.GaugeValue,
 				p.ExpectedYield.Value,
 				string(p.InstrumentType), p.Ticker, string(p.ExpectedYield.Currency)) //TODO Обработать разные валюты
@@ -92,22 +103,22 @@ func (c TinkoffCollector) Collect(ch chan<- prometheus.Metric) {
 
 	wg.Wait()
 
-	for _, c := range portfolio.Currencies {
+	for _, currency := range portfolio.Currencies {
 		wg.Add(1)
 
-		go func(c sdk.CurrencyBalance, ch chan<- prometheus.Metric) {
-			ch <- prometheus.MustNewConstMetric(currencyDesc,
-				prometheus.GaugeValue, c.Balance, string(c.Currency))
-			ch <- prometheus.MustNewConstMetric(currencyBlockedDesc,
-				prometheus.GaugeValue, c.Blocked, string(c.Currency))
+		go func(cb sdk.CurrencyBalance, ch chan<- prometheus.Metric) {
+			ch <- prometheus.MustNewConstMetric(c.currencyDesc,
+				prometheus.GaugeValue, cb.Balance, string(cb.Currency))
+			ch <- prometheus.MustNewConstMetric(c.currencyBlockedDesc,
+				prometheus.GaugeValue, cb.Blocked, string(cb.Currency))
 			wg.Done()
-		}(c, ch)
+		}(currency, ch)
 	}
 
 	wg.Wait()
 
-	ch <- prometheus.MustNewConstMetric(totalPayInDesc, prometheus.GaugeValue, getPayIn(getHistory()))
-	ch <- prometheus.MustNewConstMetric(totalPayOutDesc, prometheus.GaugeValue, getPayOut(getHistory()))
+	ch <- prometheus.MustNewConstMetric(c.totalPayInDesc, prometheus.GaugeValue, getPayIn(getHistory()))
+	ch <- prometheus.MustNewConstMetric(c.totalPayOutDesc, prometheus.GaugeValue, getPayOut(getHistory()))
 
 	tickers := viper.GetStringSlice("tickers")
 	for _, t := range tickers {
@@ -124,7 +135,7 @@ func (c TinkoffCollector) Collect(ch chan<- prometheus.Metric) {
 				return
 			}
 
-			ch <- prometheus.MustNewConstMetric(stockPriceDesc, prometheus.GaugeValue, price, "Stock", t, string(f.Currency), "0")
+			ch <- prometheus.MustNewConstMetric(c.stockPriceDesc, prometheus.GaugeValue, price, "Stock", t, string(f.Currency), "0")
 
 			wg.Done()
 		}(t, ch)

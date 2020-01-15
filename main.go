@@ -38,7 +38,7 @@ func main() {
 		log.Fatal("You must specify the correct token!")
 	}
 
-	c := TinkoffCollector{}
+	c := newTinkoffCollector()
 	prometheus.MustRegister(c)
 	http.Handle(viper.GetString("endpoint"), promhttp.Handler())
 	log.Fatal(http.ListenAndServe(":"+viper.GetString("port"), nil))
