@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	log "github.com/sirupsen/logrus"
 	"sync"
 
 	sdk "github.com/TinkoffCreditSystems/invest-openapi-go-sdk"

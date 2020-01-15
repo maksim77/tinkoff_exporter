@@ -2,10 +2,10 @@ package main
 
 import (
 	"context"
-	"log"
 	"time"
 
 	sdk "github.com/TinkoffCreditSystems/invest-openapi-go-sdk"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
