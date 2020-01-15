@@ -45,7 +45,7 @@ func getTotalPositions(positions []sdk.PositionBalance) (totalPositions float64,
 	for _, p := range positions {
 		lastPrice, err := getLastPrice(p.FIGI)
 		if err != nil {
-			return 0, nil
+			return 0, err
 		}
 
 		if p.InstrumentType == "Bond" {

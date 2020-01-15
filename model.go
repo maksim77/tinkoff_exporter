@@ -1,8 +1,9 @@
 package main
 
 import (
-	log "github.com/sirupsen/logrus"
 	"sync"
+
+	log "github.com/sirupsen/logrus"
 
 	sdk "github.com/TinkoffCreditSystems/invest-openapi-go-sdk"
 	"github.com/prometheus/client_golang/prometheus"
