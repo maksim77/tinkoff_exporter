@@ -1,45 +1,23 @@
+/*
+Copyright © 2020 NAME HERE <EMAIL ADDRESS>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
 package main
 
-import (
-	"net/http"
-
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
-)
-
-func init() {
-	viper.SetDefault("endpoint", "/metrics")
-	viper.SetDefault("port", 8000)
-	viper.SetDefault("token", "CHANGEME")
-	viper.SetDefault("tickers", []string{})
-	viper.SetDefault("сurrencies", map[string]string{"usd": "BBG0013HGFT4", "eur": "BBG0013HJJ31"})
-}
+import "tinkoff_exporter/cmd"
 
 func main() {
-	viper.SetConfigName("config")
-	viper.AddConfigPath(".")
-
-	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			log.Println("Please write config file")
-
-			err = viper.SafeWriteConfigAs("config.yaml")
-			if err != nil {
-				log.Fatalf("Error write config sample: %s", err)
-			}
-		} else {
-			log.Printf("Fatal error config file: %s \n", err)
-		}
-	}
-
-	if viper.GetString("token") == "CHANGEME" {
-		log.Fatal("You must specify the correct token!")
-	}
-
-	c := newTinkoffCollector()
-	prometheus.MustRegister(c)
-	http.Handle(viper.GetString("endpoint"), promhttp.Handler())
-	log.Fatal(http.ListenAndServe(":"+viper.GetString("port"), nil))
+	cmd.Execute()
 }

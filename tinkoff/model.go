@@ -1,4 +1,4 @@
-package main
+package tinkoff
 
 import (
 	"sync"
@@ -21,7 +21,7 @@ type TinkoffCollector struct {
 	totalPayOutDesc        *prometheus.Desc
 }
 
-func newTinkoffCollector() *TinkoffCollector {
+func NewTinkoffCollector() *TinkoffCollector {
 	return &TinkoffCollector{
 		totalAmountDesc:        prometheus.NewDesc("total", "Total amount", nil, nil),
 		stockPriceDesc:         prometheus.NewDesc("stock", "Stock price", []string{"type", "ticker", "currency", "in_portfolio"}, nil),
