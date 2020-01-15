@@ -29,7 +29,7 @@ jobs:
         run: /home/runner/go/bin/golangci-lint run
 
       - name: Lint with Actions
-        uses: Mushus/golangci-linter@v1
+        uses: Mushus/golangci-linter@v1.1.1
 
       - name: Build
         run: go build -v .
