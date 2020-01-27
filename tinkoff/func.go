@@ -1,10 +1,28 @@
-package main
+/*
+Copyright © 2020 Maksim Syomochkin <maksim77ster@gmail.com>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
+package tinkoff
 
 import (
 	"context"
+	"math"
 	"time"
 
 	sdk "github.com/TinkoffCreditSystems/invest-openapi-go-sdk"
+	"github.com/maksim77/goxirr"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -18,7 +36,7 @@ func getTotal(portfolio sdk.Portfolio) (total float64, err error) {
 
 	totalCurrencies, err := getTotalCurrencies(portfolio.Currencies)
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 		return 0, err
 	}
 
@@ -30,7 +48,7 @@ func getTotal(portfolio sdk.Portfolio) (total float64, err error) {
 func getPortfolio() (sdk.Portfolio, error) {
 	client := sdk.NewRestClient(viper.GetString("token"))
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
 	portfolio, err := client.Portfolio(ctx)
@@ -92,7 +110,7 @@ func getTotalCurrencies(currencies []sdk.CurrencyBalance) (totalCurrencies float
 
 func getLastPrice(figi string) (float64, error) {
 	client := sdk.NewRestClient(viper.GetString("token"))
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 
 	defer cancel()
 
@@ -105,7 +123,7 @@ func getLastPrice(figi string) (float64, error) {
 	return orderbook.LastPrice, nil
 }
 
-func getHistory() []sdk.Operation {
+func getHistory() ([]sdk.Operation, error) {
 	client := sdk.NewRestClient(viper.GetString("token"))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -113,7 +131,7 @@ func getHistory() []sdk.Operation {
 
 	operations, err := client.Operations(ctx, time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC), time.Now(), "")
 	if err != nil {
-		log.Fatal(err)
+		return []sdk.Operation{}, err
 	}
 
 	var listOperations []sdk.Operation
@@ -127,14 +145,14 @@ func getHistory() []sdk.Operation {
 		}
 	}
 
-	return listOperations
+	return listOperations, nil
 }
 
 func getPayIn(ops []sdk.Operation) float64 {
 	var total float64
 
 	for _, o := range ops {
-		if o.OperationType == "PaiIn" {
+		if o.OperationType == "PayIn" {
 			total += o.Payment
 		}
 	}
@@ -157,12 +175,12 @@ func getPayOut(ops []sdk.Operation) float64 {
 func getFigi(ticker string) (sdk.Instrument, error) {
 	client := sdk.NewRestClient(viper.GetString("token"))
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
 	instruments, err := client.SearchInstrumentByTicker(ctx, ticker)
 	if err != nil {
-		log.Printf("Unable to get figi by ticker: %s\n", err)
+		log.Errorf("Unable to get figi by ticker: %s\n", err)
 		return sdk.Instrument{}, err
 	}
 
@@ -172,4 +190,37 @@ func getFigi(ticker string) (sdk.Instrument, error) {
 	}
 
 	return instruments[0], nil
+}
+
+func getXirr(operations []sdk.Operation, total float64) float64 {
+	var ts goxirr.Transactions
+
+	for _, o := range operations {
+		if o.OperationType == "PayIn" || o.OperationType == "PayOut" {
+			var t goxirr.Transaction
+			t.Date = o.DateTime
+
+			switch o.OperationType {
+			case "PayIn":
+				t.Cash = 0 - o.Payment
+			case "PayOut":
+				t.Cash = math.Abs(o.Payment)
+			}
+
+			ts = append(ts, t)
+		}
+	}
+
+	reverseTransactionsList(ts)
+
+	ts = append(ts, goxirr.Transaction{Date: time.Now(), Cash: 207432.64})
+
+	return goxirr.Xirr(ts)
+}
+
+func reverseTransactionsList(in goxirr.Transactions) {
+	for i := 0; i < len(in)/2; i++ {
+		j := len(in) - i - 1
+		in[i], in[j] = in[j], in[i]
+	}
 }
