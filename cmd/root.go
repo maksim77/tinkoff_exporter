@@ -97,7 +97,6 @@ func initConfig() {
 			log.Printf("Fatal error config file: %s \n", err)
 		}
 	}
-
 	if viper.GetString("token") == "CHANGEME" {
 		log.Fatal("You must specify the correct token!")
 	}

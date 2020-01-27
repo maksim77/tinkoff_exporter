@@ -18,6 +18,7 @@ package tinkoff
 
 import (
 	"sync"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -35,6 +36,7 @@ type TinkoffCollector struct {
 	currencyBlockedDesc    *prometheus.Desc
 	totalPayInDesc         *prometheus.Desc
 	totalPayOutDesc        *prometheus.Desc
+	xirrDesc               *prometheus.Desc
 }
 
 func NewTinkoffCollector() *TinkoffCollector {
@@ -47,6 +49,7 @@ func NewTinkoffCollector() *TinkoffCollector {
 		currencyBlockedDesc:    prometheus.NewDesc("currency_blocked", "Blocked currency", []string{"currency"}, nil),
 		totalPayInDesc:         prometheus.NewDesc("total_payin", "Total PayIn", nil, nil),
 		totalPayOutDesc:        prometheus.NewDesc("total_payout", "Total PayOut", nil, nil),
+		xirrDesc:               prometheus.NewDesc("xirr", "Internal Rate of Return (IRR) for an irregular series of cash flows", nil, nil),
 	}
 }
 
@@ -59,26 +62,31 @@ func (c TinkoffCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.currencyBlockedDesc
 	ch <- c.totalPayInDesc
 	ch <- c.totalPayOutDesc
+	ch <- c.xirrDesc
 }
 
 func (c TinkoffCollector) Collect(ch chan<- prometheus.Metric) {
+	if d := time.Now().Weekday().String(); d == "Sunday" || d == "Saturday" {
+		return
+	}
+
 	var wg sync.WaitGroup
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		log.Printf("Fatal error config file: %s \n", err)
+		log.Errorf("Fatal error config file: %s \n", err)
 		return
 	}
 
 	portfolio, err := getPortfolio()
 	if err != nil {
-		log.Printf("Cannot get portfolio: %s", err)
+		log.Errorf("Cannot get portfolio: %s", err)
 		return
 	}
 
 	total, err := getTotal(portfolio)
 	if err != nil {
-		log.Printf("Get total error: %s", err)
+		log.Errorf("Get total error: %s", err)
 		return
 	}
 
@@ -92,6 +100,7 @@ func (c TinkoffCollector) Collect(ch chan<- prometheus.Metric) {
 
 			lastPrice, err := getLastPrice(p.FIGI)
 			if err != nil {
+				log.Errorf("Get last price error: %s", err)
 				return
 			}
 
@@ -118,8 +127,6 @@ func (c TinkoffCollector) Collect(ch chan<- prometheus.Metric) {
 		}(p, ch)
 	}
 
-	wg.Wait()
-
 	for _, currency := range portfolio.Currencies {
 		wg.Add(1)
 
@@ -132,10 +139,19 @@ func (c TinkoffCollector) Collect(ch chan<- prometheus.Metric) {
 		}(currency, ch)
 	}
 
-	wg.Wait()
+	hist, err := getHistory()
 
-	ch <- prometheus.MustNewConstMetric(c.totalPayInDesc, prometheus.GaugeValue, getPayIn(getHistory()))
-	ch <- prometheus.MustNewConstMetric(c.totalPayOutDesc, prometheus.GaugeValue, getPayOut(getHistory()))
+	if err != nil {
+		log.Errorf("Get history error: %s", err)
+		return
+	}
+
+	ch <- prometheus.MustNewConstMetric(c.totalPayInDesc, prometheus.GaugeValue, getPayIn(hist))
+	ch <- prometheus.MustNewConstMetric(c.totalPayOutDesc, prometheus.GaugeValue, getPayOut(hist))
+
+	xirr := getXirr(hist, total)
+
+	ch <- prometheus.MustNewConstMetric(c.xirrDesc, prometheus.GaugeValue, xirr)
 
 	tickers := viper.GetStringSlice("tickers")
 	for _, t := range tickers {
@@ -144,11 +160,13 @@ func (c TinkoffCollector) Collect(ch chan<- prometheus.Metric) {
 		go func(t string, ch chan<- prometheus.Metric) {
 			f, err := getFigi(t)
 			if err != nil {
+				log.Errorf("Get FIGI error: %s", err)
 				return
 			}
 
 			price, err := getLastPrice(f.FIGI)
 			if err != nil {
+				log.Errorf("Get last price error: %s", err)
 				return
 			}
 
