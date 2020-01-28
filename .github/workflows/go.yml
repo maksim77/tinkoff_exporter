@@ -30,3 +30,10 @@ jobs:
 
       - name: Build
         run: go build -v .
+
+      - name: Docker
+        uses: elgohr/Publish-Docker-Github-Action@master
+        with:
+          name: maksim77/tinkoff_exporter
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
