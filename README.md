@@ -39,5 +39,5 @@ tickers:
 ## Запуск в Docker
 
 ```sh
-docker run -p 8000:8000 --env TINKOFF_EXPORTER_TOKEN=t.token mvsyomo1/tinkoff_exporter
+docker run -p 8000:8000 --env TINKOFF_EXPORTER_TOKEN=t.token maksim77/tinkoff_exporter
 ```
