@@ -45,13 +45,13 @@ func getTotal(portfolio sdk.Portfolio) (total float64, err error) {
 	return total, nil
 }
 
-func getPortfolio() (sdk.Portfolio, error) {
+func getPortfolio(accountId string) (sdk.Portfolio, error) {
 	client := sdk.NewRestClient(viper.GetString("token"))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
-	portfolio, err := client.Portfolio(ctx)
+	portfolio, err := client.Portfolio(ctx, accountId)
 	if err != nil {
 		return sdk.Portfolio{}, err
 	}
@@ -67,7 +67,7 @@ func getTotalPositions(positions []sdk.PositionBalance) (totalPositions float64,
 		}
 
 		if p.InstrumentType == "Bond" {
-			totalPositions += (p.Balance * ((lastPrice * 10) + (p.AveragePositionPrice.Value - p.AveragePositionPriceNoNkd.Value)))
+			totalPositions += (p.Balance * (lastPrice + (p.AveragePositionPrice.Value - p.AveragePositionPriceNoNkd.Value)))
 		} else {
 			totalPositions += (p.Balance * lastPrice)
 		}
@@ -84,21 +84,21 @@ func getTotalCurrencies(currencies []sdk.CurrencyBalance) (totalCurrencies float
 		case "RUB":
 			totalCurrencies += c.Balance
 		case "USD":
-			lastPrice, err1 := getLastPrice(сurrs["usd"])
+			lastPrice, err := getLastPrice(сurrs["usd"])
 
 			if err != nil {
 				log.Println(err)
 
-				return 0, err1
+				return 0, err
 			}
 
 			totalCurrencies += c.Balance * lastPrice
 		case "EUR":
-			lastPrice, err1 := getLastPrice(сurrs["usd"])
+			lastPrice, err := getLastPrice(сurrs["eur"])
 
 			if err != nil {
 				log.Println(err)
-				return 0, err1
+				return 0, err
 			}
 
 			totalCurrencies += c.Balance * lastPrice
@@ -123,13 +123,13 @@ func getLastPrice(figi string) (float64, error) {
 	return orderbook.LastPrice, nil
 }
 
-func getHistory() ([]sdk.Operation, error) {
+func getHistory(id string) ([]sdk.Operation, error) {
 	client := sdk.NewRestClient(viper.GetString("token"))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	operations, err := client.Operations(ctx, time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC), time.Now(), "")
+	operations, err := client.Operations(ctx, id, time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC), time.Now(), "")
 	if err != nil {
 		return []sdk.Operation{}, err
 	}
@@ -172,7 +172,7 @@ func getPayOut(ops []sdk.Operation) float64 {
 	return total
 }
 
-func getFigi(ticker string) (sdk.Instrument, error) {
+func getFigi(ticker string) (sdk.SearchInstrument, error) {
 	client := sdk.NewRestClient(viper.GetString("token"))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
@@ -181,12 +181,12 @@ func getFigi(ticker string) (sdk.Instrument, error) {
 	instruments, err := client.SearchInstrumentByTicker(ctx, ticker)
 	if err != nil {
 		log.Errorf("Unable to get figi by ticker: %s\n", err)
-		return sdk.Instrument{}, err
+		return sdk.SearchInstrument{}, err
 	}
 
 	if len(instruments) != 1 {
 		log.Printf("Multiple instriments return by one ticker: %v\n", instruments)
-		return sdk.Instrument{}, err
+		return sdk.SearchInstrument{}, err
 	}
 
 	return instruments[0], nil
@@ -213,7 +213,7 @@ func getXirr(operations []sdk.Operation, total float64) float64 {
 
 	reverseTransactionsList(ts)
 
-	ts = append(ts, goxirr.Transaction{Date: time.Now(), Cash: 207432.64})
+	ts = append(ts, goxirr.Transaction{Date: time.Now(), Cash: total})
 
 	return goxirr.Xirr(ts)
 }
