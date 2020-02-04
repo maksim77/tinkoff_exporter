@@ -1,3 +1,8 @@
 linters:
   enable:
     - wsl
+
+linters-settings:
+  govet:
+    disable:
+      - copylocks
