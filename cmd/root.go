@@ -38,6 +38,12 @@ var rootCmd = &cobra.Command{
 	Long:  `Data exporter for OpenAPI Tinkoff Investments`,
 
 	Run: func(cmd *cobra.Command, args []string) {
+		if viper.GetBool("debug") {
+			log.SetLevel(log.DebugLevel)
+			log.Debugln("Enabling debug output")
+		} else {
+			log.SetLevel(log.InfoLevel)
+		}
 		c := tinkoff.NewTinkoffCollector()
 		prometheus.MustRegister(c)
 		http.Handle(viper.GetString("endpoint"), promhttp.Handler())
@@ -59,6 +65,7 @@ func init() {
 	viper.SetDefault("token", "CHANGEME")
 	viper.SetDefault("tickers", []string{})
 	viper.SetDefault("сurrencies", map[string]string{"usd": "BBG0013HGFT4", "eur": "BBG0013HJJ31"})
+	viper.SetDefault("debug", false)
 
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,

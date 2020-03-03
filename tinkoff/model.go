@@ -29,8 +29,6 @@ import (
 )
 
 type TinkoffCollector struct {
-	sync.Mutex
-
 	accountIDs map[sdk.AccountType]string
 
 	totalAmountDesc        *prometheus.Desc
@@ -72,6 +70,8 @@ func NewTinkoffCollector() *TinkoffCollector {
 		tc.accountIDs[id.Type] = id.ID
 	}
 
+	log.Debugf("Finded acounts: %v", tc.accountIDs)
+
 	return tc
 }
 
@@ -88,10 +88,10 @@ func (c TinkoffCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (c TinkoffCollector) Collect(ch chan<- prometheus.Metric) {
-	c.Lock()
-	defer c.Unlock()
+	start := time.Now()
 
 	if d := time.Now().Weekday().String(); d == "Sunday" || d == "Saturday" {
+		log.Debugln("Weekend")
 		return
 	}
 
@@ -120,38 +120,33 @@ func (c TinkoffCollector) Collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(c.totalAmountDesc, prometheus.GaugeValue, total, string(accountName))
 
 		for _, p := range portfolio.Positions {
-			wg.Add(1)
+			var value float64
 
-			go func(p sdk.PositionBalance, ch chan<- prometheus.Metric) {
-				var value float64
+			lastPrice, err := getLastPrice(p.FIGI)
+			if err != nil {
+				log.Errorf("Get last price error: %s", err)
+				return
+			}
 
-				lastPrice, err := getLastPrice(p.FIGI)
-				if err != nil {
-					log.Errorf("Get last price error: %s", err)
-					return
-				}
+			switch p.InstrumentType {
+			case "Bond":
+				value = lastPrice
+			default:
+				value = lastPrice
+			}
 
-				switch p.InstrumentType {
-				case "Bond":
-					value = lastPrice
-				default:
-					value = lastPrice
-				}
-
-				ch <- prometheus.MustNewConstMetric(c.stockPriceDesc,
-					prometheus.GaugeValue,
-					value,
-					string(p.InstrumentType), p.Ticker, string(p.ExpectedYield.Currency), "1", string(accountName))
-				ch <- prometheus.MustNewConstMetric(c.stockCountDesc,
-					prometheus.GaugeValue,
-					p.Balance,
-					string(p.InstrumentType), p.Ticker, string(accountName))
-				ch <- prometheus.MustNewConstMetric(c.stockExpectedYieldDesc,
-					prometheus.GaugeValue,
-					p.ExpectedYield.Value,
-					string(p.InstrumentType), p.Ticker, string(p.ExpectedYield.Currency), string(accountName)) //TODO Обработать разные валюты
-				wg.Done()
-			}(p, ch)
+			ch <- prometheus.MustNewConstMetric(c.stockPriceDesc,
+				prometheus.GaugeValue,
+				value,
+				string(p.InstrumentType), p.Ticker, string(p.ExpectedYield.Currency), "1", string(accountName))
+			ch <- prometheus.MustNewConstMetric(c.stockCountDesc,
+				prometheus.GaugeValue,
+				p.Balance,
+				string(p.InstrumentType), p.Ticker, string(accountName))
+			ch <- prometheus.MustNewConstMetric(c.stockExpectedYieldDesc,
+				prometheus.GaugeValue,
+				p.ExpectedYield.Value,
+				string(p.InstrumentType), p.Ticker, string(p.ExpectedYield.Currency), string(accountName)) //TODO Обработать разные валюты
 		}
 
 		for _, currency := range portfolio.Currencies {
@@ -205,4 +200,6 @@ func (c TinkoffCollector) Collect(ch chan<- prometheus.Metric) {
 
 		wg.Wait()
 	}
+
+	log.Debugf("total collect time: %s", time.Since(start))
 }
