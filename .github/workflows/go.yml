@@ -29,6 +29,8 @@ jobs:
           name: maksim77/tinkoff_exporter
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+          tags: latest,${{ github.ref }}
+          tag_semver: true
 
       - name: Create Release
         id: create_release
@@ -40,3 +42,15 @@ jobs:
           release_name: Release ${{ github.ref }}
           draft: false
           prerelease: false
+
+  release-linux-386:
+    name: release linux/386
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: compile and release
+        uses: ngs/go-release.action@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GOARCH: "386"
+          GOOS: linux
