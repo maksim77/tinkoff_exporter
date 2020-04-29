@@ -50,5 +50,6 @@ jobs:
       - uses: actions/checkout@master
       - name: Get TAG env
         run: |
-          tag=${{ github.ref }} | sed -E "s/.*v(.*)/\1/g"
+          echo ${{ github.ref }} > ref.txt 
+          tag=`sed -E "s/.*v(.*)/\1/g" ref.txt`
           echo $tag
