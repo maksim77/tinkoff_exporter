@@ -7,6 +7,21 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - os: linux_386
+            artifact_name: tinkoff_exporter_linux_386
+            asset_name: tinkoff_exporter_linux_386
+          - os: linux_adm64
+            artifact_name: tinkoff_exporter_linux_adm64
+            asset_name: tinkoff_exporter_linux_amd64
+          - os: linux_arm
+            artifact_name: tinkoff_exporter_linux_arm
+            asset_name: tinkoff_exporter_linux_arm
+          - os: windows
+            artifact_name: tinkoff_exporter_windows_amd64.exe
+            asset_name: tinkoff_exporter_windows.exe
     steps:
       - name: Set up Go 1.13
         uses: actions/setup-go@v1
@@ -58,50 +73,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build/tinkoff_exporter_darwin_amd64
-          asset_name: tinkoff_exporter_darwin_amd64
-          asset_content_type: application/octet-stream
-
-      - name: Upload Release Asset
-        id: upload-release-asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build/tinkoff_exporter_linux_386
-          asset_name: tinkoff_exporter_linux_386
-          asset_content_type: application/octet-stream
-
-      - name: Upload Release Asset
-        id: upload-release-asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build/tinkoff_exporter_linux_amd64
-          asset_name: tinkoff_exporter_linux_amd64
-          asset_content_type: application/octet-stream
-
-      - name: Upload Release Asset
-        id: upload-release-asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build/tinkoff_exporter_linux_arm
-          asset_name: tinkoff_exporter_linux_arm
-          asset_content_type: application/octet-stream
-
-      - name: Upload Release Asset
-        id: upload-release-asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build/tinkoff_exporter_windows_amd64
-          asset_name: tinkoff_exporter_windows_amd64
+          asset_path: ./build/${{ matrix.artifact_name }}
+          asset_name: ${{ matrix.asset_name }}
           asset_content_type: application/octet-stream
