@@ -14,6 +14,10 @@ jobs:
           go-version: 1.13
         id: go
 
+      - name: Get TAG env
+        run: |
+          tag=${{ github.ref }} | sed -E "s/.*v(.*)/\1/g"
+          echo $tag
       - name: Check out code into the Go module directory
         uses: actions/checkout@v1
 
