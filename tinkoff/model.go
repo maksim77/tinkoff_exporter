@@ -90,8 +90,13 @@ func (c TinkoffCollector) Describe(ch chan<- *prometheus.Desc) {
 func (c TinkoffCollector) Collect(ch chan<- prometheus.Metric) {
 	start := time.Now()
 
-	if d := time.Now().Weekday().String(); d == "Sunday" || d == "Saturday" {
+	if d := start.Weekday().String(); d == "Sunday" || d == "Saturday" {
 		log.Debugln("Weekend")
+		return
+	}
+
+	if h := start.Hour(); h > 2 && h < 10 {
+		log.Debugln("Night")
 		return
 	}
 
