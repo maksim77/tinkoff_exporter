@@ -7,21 +7,6 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - os: linux_386
-            artifact_name: tinkoff_exporter_linux_386
-            asset_name: tinkoff_exporter_linux_386
-          - os: linux_adm64
-            artifact_name: tinkoff_exporter_linux_adm64
-            asset_name: tinkoff_exporter_linux_amd64
-          - os: linux_arm
-            artifact_name: tinkoff_exporter_linux_arm
-            asset_name: tinkoff_exporter_linux_arm
-          - os: windows
-            artifact_name: tinkoff_exporter_windows_amd64.exe
-            asset_name: tinkoff_exporter_windows.exe
     steps:
       - name: Set up Go 1.13
         uses: actions/setup-go@v1
@@ -45,7 +30,7 @@ jobs:
         run: |
           go build .
           go get github.com/mitchellh/gox
-          /home/runner/go/bin/gox -osarch="linux/amd64 linux/386 linux/arm darwin/amd64 windows/amd64" --output "build/{{ .Dir }}_{{.OS}}_{{.Arch}}"
+          /home/runner/go/bin/gox -osarch="linux/amd64 linux/arm darwin/amd64 windows/amd64" --output "build/{{ .Dir }}_{{.OS}}_{{.Arch}}"
 
       - name: Docker
         uses: elgohr/Publish-Docker-Github-Action@master
@@ -55,24 +40,13 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
           tags: "latest,${{ env.tag }}"
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@latest
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            build/tinkoff_exporter_darwin_amd64
+            build/tinkoff_exporter_windows_amd64
+            build/tinkoff_exporter_linux_amd64
+            build/tinkoff_exporter_linux_arm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
-
-      - name: Upload Release Asset
-        id: upload-release-asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build/${{ matrix.artifact_name }}
-          asset_name: ${{ matrix.asset_name }}
-          asset_content_type: application/octet-stream
