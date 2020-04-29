@@ -27,7 +27,10 @@ jobs:
         uses: Mushus/golangci-linter@v1.1.2
 
       - name: Build
-        run: go build -v .
+        run: |
+          go build -v .
+          go get github.com/mitchellh/gox
+          gox -osarch="linux/amd64 linux/386 linux/arm darwin/amd64 windows/amd64" --output "build/{{ .Dir }}_{{.OS}}_{{.Arch}}"
 
       - name: Docker
         uses: elgohr/Publish-Docker-Github-Action@master
@@ -47,3 +50,58 @@ jobs:
           release_name: Release ${{ github.ref }}
           draft: false
           prerelease: false
+
+      - name: Upload Release Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/tinkoff_exporter_darwin_amd64
+          asset_name: tinkoff_exporter_darwin_amd64
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/tinkoff_exporter_linux_386
+          asset_name: tinkoff_exporter_linux_386
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/tinkoff_exporter_linux_amd64
+          asset_name: tinkoff_exporter_linux_amd64
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/tinkoff_exporter_linux_arm
+          asset_name: tinkoff_exporter_linux_arm
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/tinkoff_exporter_windows_amd64
+          asset_name: tinkoff_exporter_windows_amd64
+          asset_content_type: application/octet-stream
