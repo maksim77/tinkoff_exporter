@@ -45,7 +45,7 @@ jobs:
         with:
           files: |
             build/tinkoff_exporter_darwin_amd64
-            build/tinkoff_exporter_windows_amd64
+            build/tinkoff_exporter_windows_amd64.exe
             build/tinkoff_exporter_linux_amd64
             build/tinkoff_exporter_linux_arm
         env:
