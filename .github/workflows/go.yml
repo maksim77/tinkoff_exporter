@@ -43,10 +43,9 @@ jobs:
 
       - name: Build
         run: |
-          go build -v .
+          go build .
           go get github.com/mitchellh/gox
-          echo $PATH
-          gox -osarch="linux/amd64 linux/386 linux/arm darwin/amd64 windows/amd64" --output "build/{{ .Dir }}_{{.OS}}_{{.Arch}}"
+          /home/runner/go/bin/gox -osarch="linux/amd64 linux/386 linux/arm darwin/amd64 windows/amd64" --output "build/{{ .Dir }}_{{.OS}}_{{.Arch}}"
 
       - name: Docker
         uses: elgohr/Publish-Docker-Github-Action@master
