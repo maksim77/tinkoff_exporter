@@ -88,7 +88,9 @@ func (c TinkoffCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (c TinkoffCollector) Collect(ch chan<- prometheus.Metric) {
-	start := time.Now()
+	offset := int((3 * time.Hour).Seconds())
+	mskTZ := time.FixedZone("Moscow Time", offset)
+	start := time.Now().In(mskTZ)
 
 	if d := start.Weekday().String(); d == "Sunday" || d == "Saturday" {
 		log.Debugln("Weekend")
