@@ -21,7 +21,7 @@ jobs:
         run: |
           echo ${{ github.ref }} > ref.txt 
           tag=`sed -E "s/.*v(.*)/\1/g" ref.txt`
-          echo "::set-env name=tag::$tag"
+          echo "tag=$tag" >> $GITHUB_ENV
 
       - name: GolangCI-Lint
         uses: Mushus/golangci-linter@v1.1.2
