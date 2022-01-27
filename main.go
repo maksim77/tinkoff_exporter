@@ -16,7 +16,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 package main
 
-import "tinkoff_exporter/cmd"
+import "github.com/maksim77/tinkoff_exporter/cmd"
 
 func main() {
 	cmd.Execute()

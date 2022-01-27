@@ -25,7 +25,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"tinkoff_exporter/tinkoff"
+	"github.com/maksim77/tinkoff_exporter/tinkoff"
 
 	"github.com/spf13/viper"
 )

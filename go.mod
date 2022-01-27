@@ -1,4 +1,4 @@
-module tinkoff_exporter
+module github.com/maksim77/tinkoff_exporter
 
 go 1.17
 
